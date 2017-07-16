@@ -1,0 +1,4 @@
+# See https://help.ubuntu.com/stable/installation-guide/example-preseed.txt for more options
+
+# Download "late_cmd" from tftp server and execute it. This is done very late in the installation.
+d-i preseed/late_command string fetch-url "${url%/*}/late_cmd" /target/root/late_cmd && in-target sh /root/late_cmd

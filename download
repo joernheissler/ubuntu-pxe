@@ -1,0 +1,25 @@
+#!/bin/bash -ex
+
+gpg_key=790BC7277767219C42C86F933B4FE6ACC0B21F32
+prefix=http://archive.ubuntu.com/ubuntu/dists/zesty/main
+img="$prefix/installer-amd64/current/images"
+uefi="$prefix/uefi/grub2-amd64/current"
+
+gpg --keyserver keyserver.ubuntu.com --recv-key "$gpg_key"
+
+wget -O img.sha256 "$img/SHA256SUMS"
+wget -O img.sha256.gpg "$img/SHA256SUMS.gpg"
+gpg --verify img.sha256.gpg img.sha256
+
+wget -O linux "$img/netboot/ubuntu-installer/amd64/linux"
+wget -O initrd.gz "$img/netboot/ubuntu-installer/amd64/initrd.gz"
+grep '/amd64/\(linux\|initrd\.gz\)$' img.sha256 | sed 's, .*/, ,' | sha256sum -c
+
+wget -O uefi.sha256 "$uefi/SHA256SUMS"
+wget -O uefi.sha256.gpg "$uefi/SHA256SUMS.gpg"
+gpg --verify uefi.sha256.gpg uefi.sha256
+
+wget -O grubnetx64.efi.signed "$uefi/grubnetx64.efi.signed"
+grep 'grubnetx64\.efi\.signed$' uefi.sha256 | sha256sum -c
+
+rm -f img.sha256 img.sha256.gpg uefi.sha256 uefi.sha256.gpg

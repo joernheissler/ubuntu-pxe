@@ -1,0 +1,47 @@
+#!/bin/sh -ex
+
+gpg_key=60AA7B6F30434AE68E569963E50C6A0917C622B0
+prefix="http://kernel.ubuntu.com/~kernel-ppa/mainline"
+
+# otherwise, gpg keyring will be written to /
+export HOME=/root
+
+# Get latest version
+version=`wget -O - -- "$prefix" | sed -n 's,.*href="\(v4\.[0-9]\+\(\.[0-9]\+\)\?\)/".*,\1,p' | sort -V | tail -n 1`
+[ -n "$version" ]
+echo "Install kernel version $version"
+
+tmp=`mktemp -d`
+cd -- "$tmp"
+
+# Download and verify checksums
+gpg --keyserver keyserver.ubuntu.com --recv-key "$gpg_key"
+wget -O CHECKSUMS "$prefix/$version/CHECKSUMS"
+wget -O CHECKSUMS.gpg "$prefix/$version/CHECKSUMS.gpg"
+gpg --verify CHECKSUMS.gpg CHECKSUMS
+
+# Download kernel debs
+awk '/amd64.deb|all.deb/{print $2}' "$tmp/CHECKSUMS" | grep -v lowlatency | sort -u | while read deb; do
+    wget -O "$deb" "$prefix/$version/$deb"
+done
+
+# verify kernel debs
+sha256sum -c --ignore-missing CHECKSUMS
+
+# mount sysfs
+need_umount=no
+if mount -t sysfs sysfs /sys; then
+    need_umount=yes
+fi
+
+# install new kernel
+dpkg -i *.deb
+
+# unmount sysfs
+if [ $need_umount = yes ]; then
+    umount /sys
+fi
+
+# cleanup
+cd /
+rm -r -- "$tmp"

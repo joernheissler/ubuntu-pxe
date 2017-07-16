@@ -1,0 +1,4 @@
+grubnetx64.efi.signed
+initrd.gz
+linux
+*.sha256*
